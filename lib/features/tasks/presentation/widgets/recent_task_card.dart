@@ -32,7 +32,9 @@ class RecentTaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = task.subtaskProgress;
     final color = _resolveProgressColor(task.title, progress);
-    final totalTasks = task.subtasks.isNotEmpty ? task.subtasks.length : 12;
+    final taskCountLabel = task.subtasks.isNotEmpty
+        ? '${task.subtasks.length} ${task.subtasks.length == 1 ? 'Task' : 'Tasks'}'
+        : '1 Task';
 
     return GestureDetector(
       onTap: onTap,
@@ -40,6 +42,7 @@ class RecentTaskCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: NeoBrutalist.card(
+          context: context,
           borderRadius: 20,
           borderWidth: 1.5,
           shadowOffset: const Offset(0, 3.5),
@@ -55,10 +58,10 @@ class RecentTaskCard extends StatelessWidget {
                     task.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: AppColors.dynamicText(context),
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -69,28 +72,28 @@ class RecentTaskCard extends StatelessWidget {
                         : 'Digital Product Design',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: AppColors.dynamicSubtext(context),
                     ),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle_outline_rounded,
                         size: 15,
-                        color: AppColors.textPrimary,
+                        color: AppColors.dynamicText(context),
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        '$totalTasks Tasks',
-                        style: const TextStyle(
+                        taskCountLabel,
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: AppColors.dynamicText(context),
                         ),
                       ),
                     ],

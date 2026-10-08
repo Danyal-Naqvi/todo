@@ -198,6 +198,62 @@ class SharedPreferencesTaskLocalDataSource implements TaskLocalDataSource {
         tags: ['Meeting', 'Sync'],
         assigneeName: 'Bruce Wayne',
       ),
+      TaskModel(
+        id: 'brand-style-guide',
+        title: 'Brand Style Guide & Assets',
+        subtitle: 'Digital Product Design',
+        description:
+            'Finalize color palettes, typography scale, Neo-Brutalist design tokens, and export exportable vector icon sets.',
+        category: 'Design',
+        priority: TaskPriority.medium,
+        dueDate: now.subtract(const Duration(days: 1)),
+        dueTime: '05:00 pm',
+        timeRange: '04.00 pm - 05.00 pm',
+        status: 'Completed',
+        isCompleted: true,
+        completedAt: now.subtract(const Duration(hours: 18)),
+        customProgress: 1.0,
+        createdAt: now.subtract(const Duration(days: 3)),
+        tags: const ['Branding', 'Design System'],
+        assigneeName: 'Jack Roberts',
+        subtasks: const [
+          SubTask(
+            id: 'bg-1',
+            title: 'Define primary & secondary color palettes',
+            isCompleted: true,
+          ),
+          SubTask(
+            id: 'bg-2',
+            title: 'Export SVG icon pack',
+            isCompleted: true,
+          ),
+        ],
+      ),
+      TaskModel(
+        id: 'legacy-db-migration',
+        title: 'Legacy Database Migration',
+        subtitle: 'Digital Product Design',
+        description:
+            'Deprecated in favor of real-time cloud data pipelines. Migration scripts archived.',
+        category: 'Development',
+        priority: TaskPriority.low,
+        dueDate: now.subtract(const Duration(days: 4)),
+        dueTime: '11:00 am',
+        timeRange: '11.00 am - 12.00 pm',
+        status: 'Canceled',
+        isCompleted: false,
+        customProgress: 0.15,
+        createdAt: now.subtract(const Duration(days: 6)),
+        tags: const ['Database', 'Archived'],
+        assigneeName: 'Bruce Wayne',
+        subtasks: const [
+          SubTask(
+            id: 'lm-1',
+            title: 'Export legacy tables schema',
+            isCompleted: true,
+          ),
+        ],
+      ),
     ];
   }
 

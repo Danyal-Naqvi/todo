@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../profile/domain/entities/user_profile.dart';
 
 class UserAvatarWidget extends StatelessWidget {
   final double size;
   final String? assetPath;
   final String? imageUrl;
+  final String? filePath;
   final String initials;
   final Color backgroundColor;
   final bool showBorder;
@@ -14,13 +17,34 @@ class UserAvatarWidget extends StatelessWidget {
     this.size = 46,
     this.assetPath = 'assets/images/bruce.jpg',
     this.imageUrl,
+    this.filePath,
     this.initials = 'BW',
     this.backgroundColor = const Color(0xFFFF9E44),
     this.showBorder = true,
   });
 
+  factory UserAvatarWidget.fromProfile(
+    UserProfile profile, {
+    Key? key,
+    double size = 46,
+    bool showBorder = true,
+  }) {
+    return UserAvatarWidget(
+      key: key,
+      size: size,
+      assetPath: profile.assetPath,
+      imageUrl: profile.imageUrl,
+      filePath: profile.filePath,
+      initials: profile.initials,
+      backgroundColor: Color(profile.avatarColorValue),
+      showBorder: showBorder,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: size,
       height: size,
@@ -28,27 +52,49 @@ class UserAvatarWidget extends StatelessWidget {
         shape: BoxShape.circle,
         color: backgroundColor,
         border: showBorder
-            ? Border.all(color: AppColors.borderBlack, width: 1.5)
+            ? Border.all(
+                color: isDark ? const Color(0xFF383E4C) : AppColors.borderBlack,
+                width: 1.5,
+              )
             : null,
       ),
       child: ClipOval(
-        child: assetPath != null
-            ? Image.asset(
-                assetPath!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildFallbackAvatar(),
-              )
-            : (imageUrl != null
-                ? Image.network(
-                    imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildFallbackAvatar(),
-                  )
-                : _buildFallbackAvatar()),
+        child: _buildAvatarContent(),
       ),
     );
+  }
+
+  Widget _buildAvatarContent() {
+    if (filePath != null && filePath!.isNotEmpty) {
+      try {
+        final file = File(filePath!);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+          );
+        }
+      } catch (_) {}
+    }
+
+    if (assetPath != null && assetPath!.isNotEmpty) {
+      return Image.asset(
+        assetPath!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+      );
+    }
+
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      return Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+      );
+    }
+
+    return _buildFallbackAvatar();
   }
 
   Widget _buildFallbackAvatar() {

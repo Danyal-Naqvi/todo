@@ -2,22 +2,33 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
 class NeoBrutalist {
-  /// Standard Neo-Brutalist card decoration with crisp black outline and solid offset shadow
+  /// Standard Neo-Brutalist card decoration with crisp outline and solid offset shadow.
+  /// Automatically adapts to dark mode if [context] is provided.
   static BoxDecoration card({
-    Color backgroundColor = Colors.white,
+    BuildContext? context,
+    Color? backgroundColor,
     double borderRadius = 18.0,
     double borderWidth = 1.5,
     Offset shadowOffset = const Offset(0, 3.5),
-    Color borderColor = AppColors.borderBlack,
-    Color shadowColor = AppColors.shadowBlack,
+    Color? borderColor,
+    Color? shadowColor,
   }) {
+    final isDark =
+        context != null && Theme.of(context).brightness == Brightness.dark;
+    final bg =
+        backgroundColor ?? (isDark ? const Color(0xFF191C24) : Colors.white);
+    final border =
+        borderColor ?? (isDark ? const Color(0xFF2E3342) : AppColors.borderBlack);
+    final shadow = shadowColor ??
+        (isDark ? Colors.black.withValues(alpha: 0.6) : AppColors.shadowBlack);
+
     return BoxDecoration(
-      color: backgroundColor,
+      color: bg,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: borderColor, width: borderWidth),
+      border: Border.all(color: border, width: borderWidth),
       boxShadow: [
         BoxShadow(
-          color: shadowColor,
+          color: shadow,
           offset: shadowOffset,
           blurRadius: 0,
         ),
@@ -27,21 +38,28 @@ class NeoBrutalist {
 
   /// Interactive pressable button decoration
   static BoxDecoration button({
+    BuildContext? context,
     Color backgroundColor = AppColors.primary,
     double borderRadius = 30.0,
     double borderWidth = 1.5,
     bool isPressed = false,
   }) {
+    final isDark =
+        context != null && Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? Colors.black : AppColors.borderBlack;
+
     return BoxDecoration(
       color: backgroundColor,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: AppColors.borderBlack, width: borderWidth),
+      border: Border.all(color: border, width: borderWidth),
       boxShadow: isPressed
           ? []
-          : const [
+          : [
               BoxShadow(
-                color: AppColors.shadowBlack,
-                offset: Offset(0, 3),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.8)
+                    : AppColors.shadowBlack,
+                offset: const Offset(0, 3),
                 blurRadius: 0,
               ),
             ],
@@ -50,11 +68,17 @@ class NeoBrutalist {
 
   /// Input field decoration matching the screenshot
   static InputDecoration inputDecoration({
+    BuildContext? context,
     String? hintText,
     String? labelText,
     Widget? prefixIcon,
     Widget? suffixIcon,
   }) {
+    final isDark =
+        context != null && Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? const Color(0xFF191C24) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E3342) : AppColors.borderBlack;
+
     return InputDecoration(
       hintText: hintText,
       hintStyle: const TextStyle(
@@ -64,37 +88,48 @@ class NeoBrutalist {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: fillColor,
       prefixIcon: prefixIcon,
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.borderBlack, width: 1.5),
+        borderSide: BorderSide(color: borderColor, width: 1.5),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.borderBlack, width: 1.5),
+        borderSide: BorderSide(color: borderColor, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.borderBlack, width: 2.0),
+        borderSide: BorderSide(
+            color: isDark ? AppColors.primary : AppColors.borderBlack,
+            width: 2.0),
       ),
     );
   }
 
-  /// Small square icon button decoration (like back button, grid button, etc.)
+  /// Small square icon button decoration (like back button, grid button, theme toggle, etc.)
   static BoxDecoration iconButton({
-    Color backgroundColor = Colors.white,
+    BuildContext? context,
+    Color? backgroundColor,
     double borderRadius = 14.0,
   }) {
+    final isDark =
+        context != null && Theme.of(context).brightness == Brightness.dark;
+    final bg =
+        backgroundColor ?? (isDark ? const Color(0xFF191C24) : Colors.white);
+    final border = isDark ? const Color(0xFF2E3342) : AppColors.borderBlack;
+    final shadow =
+        isDark ? Colors.black.withValues(alpha: 0.6) : AppColors.shadowBlack;
+
     return BoxDecoration(
-      color: backgroundColor,
+      color: bg,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: AppColors.borderBlack, width: 1.5),
-      boxShadow: const [
+      border: Border.all(color: border, width: 1.5),
+      boxShadow: [
         BoxShadow(
-          color: AppColors.shadowBlack,
-          offset: Offset(0, 2.5),
+          color: shadow,
+          offset: const Offset(0, 2.5),
           blurRadius: 0,
         ),
       ],

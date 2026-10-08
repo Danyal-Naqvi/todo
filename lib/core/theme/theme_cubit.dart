@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeCubit extends Cubit<ThemeMode> {
   static const String _keyThemeMode = 'app_theme_mode';
 
-  ThemeCubit() : super(ThemeMode.dark) {
+  ThemeCubit() : super(ThemeMode.light) {
     _loadThemeMode();
   }
 
@@ -13,17 +13,17 @@ class ThemeCubit extends Cubit<ThemeMode> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final modeString = prefs.getString(_keyThemeMode);
-      if (modeString == 'light') {
-        emit(ThemeMode.light);
-      } else if (modeString == 'dark') {
+      if (modeString == 'dark') {
         emit(ThemeMode.dark);
+      } else if (modeString == 'light') {
+        emit(ThemeMode.light);
       } else if (modeString == 'system') {
         emit(ThemeMode.system);
       } else {
-        emit(ThemeMode.dark);
+        emit(ThemeMode.light);
       }
     } catch (_) {
-      emit(ThemeMode.dark);
+      emit(ThemeMode.light);
     }
   }
 

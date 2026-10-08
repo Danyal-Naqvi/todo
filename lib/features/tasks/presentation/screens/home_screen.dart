@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/neo_brutalist_decorations.dart';
+import '../../../../core/theme/theme_cubit.dart';
 import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -11,7 +12,9 @@ import '../widgets/neo_bottom_nav_bar.dart';
 import '../widgets/recent_task_card.dart';
 import '../widgets/status_summary_grid.dart';
 import '../widgets/user_avatar_widget.dart';
-import 'board_screen.dart';
+import '../../../profile/domain/entities/user_profile.dart';
+import '../../../profile/presentation/bloc/profile_cubit.dart';
+import 'focus_timer_screen.dart';
 import 'project_detail_screen.dart';
 import 'profile_screen.dart';
 import 'schedule_screen.dart';
@@ -47,14 +50,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.bg,
       body: IndexedStack(
         index: _currentTabIndex,
         children: [
           _buildDashboardTab(context),
-          ScheduleScreen(onAddSubtask: _openCreateTaskModal),
-          const BoardScreen(),
+          ScheduleScreen(
+            onAddSubtask: _openCreateTaskModal,
+            onBackToHome: () => setState(() => _currentTabIndex = 0),
+          ),
+          FocusTimerScreen(
+            onBackToHome: () => setState(() => _currentTabIndex = 0),
+          ),
           ProfileScreen(onBack: () => setState(() => _currentTabIndex = 0)),
         ],
       ),
@@ -70,6 +80,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _getTaskStatusCategory(Task task) {
+    if (task.isCompleted || task.status.trim().toLowerCase() == 'completed') {
+      return 'Completed';
+    }
+    final s = task.status.trim().toLowerCase();
+    if (s == 'canceled' || s == 'cancelled') {
+      return 'Canceled';
+    }
+    if (s == 'on going' || s == 'ongoing') {
+      return 'On going';
+    }
+    return 'In Process';
+  }
+
   Widget _buildDashboardTab(BuildContext context) {
     return SafeArea(
       child: BlocBuilder<TaskBloc, TaskState>(
@@ -79,22 +103,26 @@ class _HomeScreenState extends State<HomeScreen> {
             tasks = state.allTasks;
           }
 
-          // Count stats
+          // Real counts based on actual task statuses
           final ongoingCount = tasks
-              .where((t) => t.status.toLowerCase() == 'on going')
+              .where((t) => _getTaskStatusCategory(t) == 'On going')
               .length;
           final inProcessCount = tasks
-              .where((t) => t.status.toLowerCase() == 'in process')
+              .where((t) => _getTaskStatusCategory(t) == 'In Process')
               .length;
-          final completedCount =
-              tasks.where((t) => t.isCompleted || t.status.toLowerCase() == 'completed').length;
+          final completedCount = tasks
+              .where((t) => _getTaskStatusCategory(t) == 'Completed')
+              .length;
           final canceledCount = tasks
-              .where((t) => t.status.toLowerCase() == 'canceled')
+              .where((t) => _getTaskStatusCategory(t) == 'Canceled')
               .length;
 
           // Filter tasks if status card selected
           final displayedTasks = _selectedStatusFilter != null
-              ? tasks.where((t) => t.status == _selectedStatusFilter).toList()
+              ? tasks
+                  .where((t) =>
+                      _getTaskStatusCategory(t) == _selectedStatusFilter)
+                  .toList()
               : tasks;
 
           return SingleChildScrollView(
@@ -103,81 +131,148 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header: Avatar + "Hi, Bruce 👋" + Grid Icon
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _currentTabIndex = 3),
-                      child: const UserAvatarWidget(
-                        size: 46,
-                        showBorder: true,
-                        backgroundColor: Color(0xFFFF9E44),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
+                // Top Header: Avatar + "Hi, {Name} 👋" + Grid Icon
+                Builder(
+                  builder: (context) {
+                    UserProfile userProfile = const UserProfile();
+                    try {
+                      userProfile = context.watch<ProfileCubit>().state;
+                    } catch (_) {}
+
+                    final firstName = userProfile.name
+                        .trim()
+                        .split(RegExp(r'\s+'))
+                        .first;
+
+                    return Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _currentTabIndex = 3),
+                          child: UserAvatarWidget.fromProfile(
+                            userProfile,
+                            size: 46,
+                            showBorder: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Hi, $firstName',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textPrimary,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text('👋', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
                               Text(
-                                'Hi, Bruce',
+                                userProfile.bio.isNotEmpty
+                                    ? userProfile.bio
+                                    : 'Your daily adventure starts now',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                  letterSpacing: -0.2,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary,
                                 ),
                               ),
-                              SizedBox(width: 4),
-                              Text('👋', style: TextStyle(fontSize: 16)),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'Your daily adventure starts now',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
+                        ),
+                        // Global Dark / Light Mode Toggle Button
+                        Builder(
+                          builder: (btnCtx) {
+                            final isDarkTheme =
+                                Theme.of(btnCtx).brightness == Brightness.dark;
+
+                            return GestureDetector(
+                              key: const ValueKey('home_theme_toggle_btn'),
+                              onTap: () {
+                                try {
+                                  btnCtx.read<ThemeCubit>().toggleTheme();
+                                } catch (_) {}
+                              },
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                decoration: NeoBrutalist.iconButton(
+                                  context: btnCtx,
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 250),
+                                  transitionBuilder: (child, anim) =>
+                                      ScaleTransition(
+                                          scale: anim, child: child),
+                                  child: Icon(
+                                    isDarkTheme
+                                        ? Icons.light_mode_rounded
+                                        : Icons.dark_mode_rounded,
+                                    key: ValueKey(isDarkTheme),
+                                    size: 20,
+                                    color: isDarkTheme
+                                        ? const Color(0xFFFFB74D)
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        // Grid Icon Button
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const TaskOverviewScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: NeoBrutalist.iconButton(context: context),
+                            child: Icon(
+                              Icons.grid_view_rounded,
+                              size: 20,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.textPrimary,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    // Grid Icon Button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TaskOverviewScreen(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: NeoBrutalist.iconButton(),
-                        child: const Icon(
-                          Icons.grid_view_rounded,
-                          size: 20,
-                          color: AppColors.textPrimary,
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 22),
 
                 // 2x2 Status Summary Cards Grid
                 StatusSummaryGrid(
-                  ongoingCount: ongoingCount > 0 ? ongoingCount : 24,
-                  inProcessCount: inProcessCount > 0 ? inProcessCount : 12,
-                  completedCount: completedCount > 0 ? completedCount : 42,
-                  canceledCount: canceledCount > 0 ? canceledCount : 8,
+                  ongoingCount: ongoingCount,
+                  inProcessCount: inProcessCount,
+                  completedCount: completedCount,
+                  canceledCount: canceledCount,
                   activeStatus: _selectedStatusFilter,
                   onStatusSelected: (status) {
                     setState(() {
@@ -196,12 +291,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Recent Task',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: AppColors.dynamicText(context),
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -228,10 +323,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 36),
                       child: Text(
-                        'No tasks in $_selectedStatusFilter',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        _selectedStatusFilter != null
+                            ? 'No $_selectedStatusFilter tasks'
+                            : 'No tasks found',
+                        style: TextStyle(
+                          color: AppColors.dynamicSubtext(context),
                           fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),

@@ -15,15 +15,22 @@ class NeoBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(
-          top: BorderSide(color: Color(0xFFF0F2F5), width: 1.5),
+        color: isDark ? const Color(0xFF14171E) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF262B36) : const Color(0xFFF0F2F5),
+            width: 1.5,
+          ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.5)
+                : Colors.black.withValues(alpha: 0.04),
             offset: const Offset(0, -4),
             blurRadius: 10,
           ),
@@ -76,10 +83,10 @@ class NeoBottomNavBar extends StatelessWidget {
               ),
             ),
 
-            // Tab 2: Board / Projects (mapped to index 2)
+            // Tab 2: Focus & Timer (mapped to index 2)
             _NavIconItem(
-              icon: Icons.assignment_outlined,
-              activeIcon: Icons.assignment_rounded,
+              icon: Icons.timer_outlined,
+              activeIcon: Icons.timer_rounded,
               isSelected: currentIndex == 2,
               onTap: () => onTabSelected(2),
             ),
@@ -113,6 +120,8 @@ class _NavIconItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -121,7 +130,9 @@ class _NavIconItem extends StatelessWidget {
         child: Icon(
           isSelected ? activeIcon : icon,
           size: 26,
-          color: isSelected ? AppColors.primary : const Color(0xFFFFAFA6),
+          color: isSelected
+              ? AppColors.primary
+              : (isDark ? const Color(0xFF6E7582) : const Color(0xFFFFAFA6)),
         ),
       ),
     );

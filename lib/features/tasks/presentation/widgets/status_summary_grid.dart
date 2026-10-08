@@ -11,10 +11,10 @@ class StatusSummaryGrid extends StatelessWidget {
 
   const StatusSummaryGrid({
     super.key,
-    this.ongoingCount = 24,
-    this.inProcessCount = 12,
-    this.completedCount = 42,
-    this.canceledCount = 8,
+    this.ongoingCount = 0,
+    this.inProcessCount = 0,
+    this.completedCount = 0,
+    this.canceledCount = 0,
     this.onStatusSelected,
     this.activeStatus,
   });
@@ -158,7 +158,7 @@ class _StatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '$count Tasks',
+                    '$count ${count == 1 ? 'Task' : 'Tasks'}',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 12,

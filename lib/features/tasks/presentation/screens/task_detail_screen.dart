@@ -80,6 +80,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       isCompleted: _isCompleted,
       isPinned: _isPinned,
       subtasks: _subtasks,
+      status: _isCompleted
+          ? 'Completed'
+          : (widget.task.status == 'Completed'
+              ? 'In Process'
+              : widget.task.status),
       completedAt: _isCompleted && widget.task.completedAt == null
           ? DateTime.now()
           : (!_isCompleted ? null : widget.task.completedAt),

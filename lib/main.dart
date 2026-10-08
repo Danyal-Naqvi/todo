@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'core/firebase/firebase_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
+import 'features/profile/presentation/bloc/profile_cubit.dart';
 import 'features/tasks/data/datasources/task_local_datasource.dart';
 import 'features/tasks/data/datasources/task_remote_datasource.dart';
 import 'features/tasks/data/repositories/task_repository_impl.dart';
@@ -51,12 +52,14 @@ void main() async {
 class TaskFlowApp extends StatelessWidget {
   final TaskRepository? taskRepository;
   final ThemeCubit? themeCubit;
+  final ProfileCubit? profileCubit;
   final String? userId;
 
   const TaskFlowApp({
     super.key,
     this.taskRepository,
     this.themeCubit,
+    this.profileCubit,
     this.userId,
   });
 
@@ -72,6 +75,9 @@ class TaskFlowApp extends StatelessWidget {
       providers: [
         BlocProvider<ThemeCubit>(
           create: (_) => themeCubit ?? ThemeCubit(),
+        ),
+        BlocProvider<ProfileCubit>(
+          create: (_) => profileCubit ?? ProfileCubit(),
         ),
         BlocProvider<TaskBloc>(
           create: (_) => TaskBloc(

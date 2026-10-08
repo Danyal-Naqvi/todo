@@ -8,18 +8,31 @@ import '../../domain/entities/task_priority.dart';
 
 class CreateTaskModal extends StatefulWidget {
   final Function(Task newTask) onTaskCreated;
+  final DateTime? initialDate;
+  final String? initialTime;
 
-  const CreateTaskModal({super.key, required this.onTaskCreated});
+  const CreateTaskModal({
+    super.key,
+    required this.onTaskCreated,
+    this.initialDate,
+    this.initialTime,
+  });
 
   static Future<void> show(
     BuildContext context, {
     required Function(Task newTask) onTaskCreated,
+    DateTime? initialDate,
+    String? initialTime,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => CreateTaskModal(onTaskCreated: onTaskCreated),
+      builder: (ctx) => CreateTaskModal(
+        onTaskCreated: onTaskCreated,
+        initialDate: initialDate,
+        initialTime: initialTime,
+      ),
     );
   }
 
@@ -29,11 +42,42 @@ class CreateTaskModal extends StatefulWidget {
 
 class _CreateTaskModalState extends State<CreateTaskModal> {
   final _titleController = TextEditingController();
-  final _assigneeController = TextEditingController();
   final _detailsController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
   String _selectedCategory = 'Design';
-  bool _getAlert = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.initialDate ?? DateTime.now();
+    _selectedTime = _parseInitialTime(widget.initialTime);
+  }
+
+  TimeOfDay _parseInitialTime(String? timeStr) {
+    if (timeStr != null && timeStr.trim().isNotEmpty) {
+      final clean = timeStr.toLowerCase().replaceAll('.', ':');
+      final regex = RegExp(r'(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?');
+      final match = regex.firstMatch(clean);
+      if (match != null) {
+        var hour = int.tryParse(match.group(1) ?? '') ?? 9;
+        final minute = int.tryParse(match.group(2) ?? '') ?? 0;
+        final period = match.group(3);
+        if (period == 'pm' && hour < 12) hour += 12;
+        if (period == 'am' && hour == 12) hour = 0;
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+    final now = TimeOfDay.now();
+    return TimeOfDay(hour: (now.hour + 1) % 24, minute: 0);
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '${hour.toString().padLeft(2, '0')}:$minute $period';
+  }
 
   final List<String> _categories = [
     'Design',
@@ -47,12 +91,13 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
   @override
   void dispose() {
     _titleController.dispose();
-    _assigneeController.dispose();
     _detailsController.dispose();
     super.dispose();
   }
 
   Future<void> _pickDate() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -61,11 +106,17 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.primary,
+                    surface: Color(0xFF191C24),
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.primary,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.textPrimary,
+                  ),
           ),
           child: child!,
         );
@@ -73,6 +124,47 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.primary,
+                    surface: Color(0xFF191C24),
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.primary,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.textPrimary,
+                  ),
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: isDark ? const Color(0xFF191C24) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                    color: isDark ? const Color(0xFF2E3342) : AppColors.borderBlack,
+                    width: 2),
+              ),
+              dialHandColor: AppColors.primary,
+              dialBackgroundColor: isDark ? const Color(0xFF222632) : const Color(0xFFF5F6F8),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedTime = picked);
     }
   }
 
@@ -88,6 +180,35 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
       return;
     }
 
+    final taskDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+
+    final formattedTime = _formatTimeOfDay(_selectedTime);
+
+    // Compute standard 1-hour window for timeRange
+    final endDateTime = taskDateTime.add(const Duration(hours: 1));
+    final startHour = (_selectedTime.hourOfPeriod == 0
+            ? 12
+            : _selectedTime.hourOfPeriod)
+        .toString()
+        .padLeft(2, '0');
+    final startMin = _selectedTime.minute.toString().padLeft(2, '0');
+    final startPeriod = _selectedTime.period == DayPeriod.am ? 'am' : 'pm';
+
+    final endHourInt =
+        endDateTime.hour % 12 == 0 ? 12 : endDateTime.hour % 12;
+    final endHour = endHourInt.toString().padLeft(2, '0');
+    final endMin = endDateTime.minute.toString().padLeft(2, '0');
+    final endPeriod = endDateTime.hour >= 12 ? 'pm' : 'am';
+
+    final timeRange =
+        '$startHour.$startMin $startPeriod - $endHour.$endMin $endPeriod';
+
     final task = Task(
       id: const Uuid().v4(),
       title: title,
@@ -97,16 +218,15 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
       description: _detailsController.text.trim(),
       category: _selectedCategory,
       priority: TaskPriority.high,
-      dueDate: _selectedDate,
-      dueTime: DateFormat('hh:mm a').format(DateTime.now()),
-      timeRange: '${DateFormat('hh.mm a').format(_selectedDate)} - ${DateFormat('hh.mm a').format(_selectedDate.add(const Duration(hours: 1)))}',
+      dueDate: taskDateTime,
+      dueTime: formattedTime,
+      timeRange: timeRange,
       createdAt: DateTime.now(),
       status: 'In Process',
       customProgress: 0.0,
-      assigneeName: _assigneeController.text.trim().isNotEmpty
-          ? _assigneeController.text.trim()
-          : 'Bruce Wayne',
-      hasReminder: _getAlert,
+      subtasks: const [],
+      assigneeName: 'Bruce Wayne',
+      hasReminder: false,
     );
 
     widget.onTaskCreated(task);
@@ -115,11 +235,19 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
-      decoration: const BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF14171E) : AppColors.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF2E3342) : AppColors.borderBlack,
+            width: 2,
+          ),
+        ),
       ),
       child: Column(
         children: [
@@ -130,7 +258,7 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFDCDFE5),
+                color: isDark ? const Color(0xFF383E4C) : const Color(0xFFDCDFE5),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -140,29 +268,18 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: NeoBrutalist.iconButton(),
-                    child: const Icon(
+                    decoration: NeoBrutalist.iconButton(context: context),
+                    child: Icon(
                       Icons.close,
                       size: 20,
-                      color: AppColors.textPrimary,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
-                  ),
-                ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: NeoBrutalist.iconButton(),
-                  child: const Icon(
-                    Icons.search,
-                    size: 20,
-                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -177,12 +294,12 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Title
-                  const Text(
+                  Text(
                     'New Tasks',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -190,117 +307,158 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
 
                   // Task Title field
                   _buildPillInput(
+                    context: context,
                     controller: _titleController,
                     hintText: '| Task Title',
                   ),
                   const SizedBox(height: 14),
 
-                  // Date field
-                  GestureDetector(
-                    onTap: _pickDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 16),
-                      decoration: NeoBrutalist.card(
-                        borderRadius: 16,
-                        borderWidth: 1.5,
-                        shadowOffset: const Offset(0, 3.5),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '| ${DateFormat('dd MMMM yyyy').format(_selectedDate)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
+                  // Date & Time Selectors Row
+                  Row(
+                    children: [
+                      // Date Selector
+                      Expanded(
+                        flex: 6,
+                        child: GestureDetector(
+                          onTap: _pickDate,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 15),
+                            decoration: NeoBrutalist.card(
+                              context: context,
+                              borderRadius: 16,
+                              borderWidth: 1.5,
+                              shadowOffset: const Offset(0, 3.5),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_month_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    DateFormat('dd MMM yyyy')
+                                        .format(_selectedDate),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: isDark ? const Color(0xFFA0A7B5) : AppColors.textPrimary,
+                                  size: 20,
+                                ),
+                              ],
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_drop_down,
-                            color: AppColors.textPrimary,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      // Time Selector
+                      Expanded(
+                        flex: 5,
+                        child: GestureDetector(
+                          onTap: _pickTime,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 15),
+                            decoration: NeoBrutalist.card(
+                              context: context,
+                              borderRadius: 16,
+                              borderWidth: 1.5,
+                              shadowOffset: const Offset(0, 3.5),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time_filled_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _formatTimeOfDay(_selectedTime),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: isDark ? const Color(0xFFA0A7B5) : AppColors.textPrimary,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 10),
+
+                  // Quick Time Presets
+                  _buildQuickTimePresets(context),
                   const SizedBox(height: 14),
 
-                  // Assignee field
-                  _buildPillInput(
-                    controller: _assigneeController,
-                    hintText: '| Assignee',
-                    suffixIcon: const Icon(
-                      Icons.search,
-                      size: 20,
-                      color: AppColors.textPrimary,
+                  // Objective Section
+                  Text(
+                    'Objective',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
 
-                  // Details area
                   Container(
                     decoration: NeoBrutalist.card(
+                      context: context,
                       borderRadius: 16,
                       borderWidth: 1.5,
                       shadowOffset: const Offset(0, 3.5),
                     ),
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _detailsController,
-                          maxLines: 4,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                          decoration: const InputDecoration(
-                            hintText: 'Add your task details',
-                            hintStyle: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 14,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
+                    child: TextField(
+                      controller: _detailsController,
+                      maxLines: 4,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Add objective',
+                        hintStyle: TextStyle(
+                          color: isDark ? const Color(0xFF6E7482) : AppColors.textMuted,
+                          fontSize: 14,
                         ),
-                        const SizedBox(height: 12),
-                        // Formatting tools bar
-                        Row(
-                          children: [
-                            const Icon(Icons.grid_view_rounded,
-                                size: 18, color: AppColors.textSecondary),
-                            const SizedBox(width: 14),
-                            const Text(
-                              'A',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            const Icon(Icons.attach_file_rounded,
-                                size: 18, color: AppColors.textSecondary),
-                          ],
-                        ),
-                      ],
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
                   // Category Section
-                  const Text(
+                  Text(
                     'Category',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -318,12 +476,12 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                               horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFFE8EBEE)
-                                : const Color(0xFFF1F3F5),
+                                ? (isDark ? const Color(0xFF2E3342) : const Color(0xFFE8EBEE))
+                                : (isDark ? const Color(0xFF222632) : const Color(0xFFF1F3F5)),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.borderBlack
+                                  ? (isDark ? Colors.white : AppColors.borderBlack)
                                   : Colors.transparent,
                               width: 1.5,
                             ),
@@ -336,8 +494,10 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                               color: isSelected
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
+                                  ? (isDark ? Colors.white : AppColors.textPrimary)
+                                  : (isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary),
                             ),
                           ),
                         ),
@@ -345,30 +505,7 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                     }).toList(),
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Get alert toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Get alert for this task',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Switch(
-                        value: _getAlert,
-                        activeThumbColor: AppColors.primary,
-                        activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
-                        onChanged: (val) => setState(() => _getAlert = val),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
                   // Create Task Button
                   GestureDetector(
@@ -379,11 +516,17 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: const [
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF383E4C) : AppColors.borderBlack,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x35FA6551),
-                            offset: Offset(0, 4),
-                            blurRadius: 10,
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.6)
+                                : const Color(0x35FA6551),
+                            offset: const Offset(0, 4),
+                            blurRadius: 6,
                           ),
                         ],
                       ),
@@ -399,7 +542,7 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                 ],
               ),
             ),
@@ -410,27 +553,31 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
   }
 
   Widget _buildPillInput({
+    required BuildContext context,
     required TextEditingController controller,
     required String hintText,
     Widget? suffixIcon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: NeoBrutalist.card(
+        context: context,
         borderRadius: 16,
         borderWidth: 1.5,
         shadowOffset: const Offset(0, 3.5),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: isDark ? Colors.white : AppColors.textPrimary,
         ),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            color: AppColors.textMuted,
+          hintStyle: TextStyle(
+            color: isDark ? const Color(0xFF6E7482) : AppColors.textMuted,
             fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
@@ -439,6 +586,61 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
               const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           border: InputBorder.none,
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickTimePresets(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final presets = [
+      const TimeOfDay(hour: 9, minute: 0),
+      const TimeOfDay(hour: 10, minute: 0),
+      const TimeOfDay(hour: 11, minute: 0),
+      const TimeOfDay(hour: 13, minute: 0),
+      const TimeOfDay(hour: 14, minute: 0),
+      const TimeOfDay(hour: 15, minute: 0),
+      const TimeOfDay(hour: 16, minute: 0),
+      const TimeOfDay(hour: 17, minute: 0),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: presets.map((t) {
+          final isSelected =
+              _selectedTime.hour == t.hour && _selectedTime.minute == t.minute;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedTime = t),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary
+                    : (isDark ? const Color(0xFF222632) : const Color(0xFFF1F3F5)),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? (isDark ? Colors.white : AppColors.borderBlack)
+                      : (isDark ? const Color(0xFF2E3342) : const Color(0xFFE2E5E8)),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Text(
+                _formatTimeOfDay(t),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white : AppColors.textPrimary),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

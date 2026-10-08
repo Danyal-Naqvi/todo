@@ -1,7 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/neo_brutalist_decorations.dart';
+import '../bloc/task_bloc.dart';
+import '../bloc/task_state.dart';
 
 class TaskOverviewScreen extends StatefulWidget {
   const TaskOverviewScreen({super.key});
@@ -11,11 +14,12 @@ class TaskOverviewScreen extends StatefulWidget {
 }
 
 class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.dynamicBg(context),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -32,11 +36,11 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                     child: Container(
                       width: 42,
                       height: 42,
-                      decoration: NeoBrutalist.iconButton(),
-                      child: const Icon(
+                      decoration: NeoBrutalist.iconButton(context: context),
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppColors.textPrimary,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -45,22 +49,22 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                       Container(
                         width: 42,
                         height: 42,
-                        decoration: NeoBrutalist.iconButton(),
-                        child: const Icon(
+                        decoration: NeoBrutalist.iconButton(context: context),
+                        child: Icon(
                           Icons.calendar_month_outlined,
                           size: 20,
-                          color: AppColors.textPrimary,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Container(
                         width: 42,
                         height: 42,
-                        decoration: NeoBrutalist.iconButton(),
-                        child: const Icon(
+                        decoration: NeoBrutalist.iconButton(context: context),
+                        child: Icon(
                           Icons.more_vert,
                           size: 20,
-                          color: AppColors.textPrimary,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -71,12 +75,12 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
               const SizedBox(height: 20),
 
               // Title
-              const Text(
+              Text(
                 'Task Overview',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -84,26 +88,48 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
               const SizedBox(height: 18),
 
               // Summary Cards (In Process & Completed)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      title: 'In Process',
-                      subtitle: '12 Tasks',
-                      color: AppColors.statusInProcess,
-                      icon: Icons.access_time_filled_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      title: 'Completed',
-                      subtitle: '42 Tasks',
-                      color: AppColors.statusCompleted,
-                      icon: Icons.assignment_turned_in_rounded,
-                    ),
-                  ),
-                ],
+              BlocBuilder<TaskBloc, TaskState>(
+                builder: (context, state) {
+                  int inProcess = 0;
+                  int completed = 0;
+                  if (state is TaskLoaded) {
+                    completed = state.allTasks
+                        .where((t) =>
+                            t.isCompleted ||
+                            t.status.trim().toLowerCase() == 'completed')
+                        .length;
+                    inProcess = state.allTasks
+                        .where((t) =>
+                            !t.isCompleted &&
+                            (t.status.trim().toLowerCase() == 'in process' ||
+                                t.status.trim().toLowerCase() ==
+                                    'in progress'))
+                        .length;
+                  }
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryCard(
+                          title: 'In Process',
+                          subtitle:
+                              '$inProcess ${inProcess == 1 ? 'Task' : 'Tasks'}',
+                          color: AppColors.statusInProcess,
+                          icon: Icons.access_time_filled_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          title: 'Completed',
+                          subtitle:
+                              '$completed ${completed == 1 ? 'Task' : 'Tasks'}',
+                          color: AppColors.statusCompleted,
+                          icon: Icons.assignment_turned_in_rounded,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 22),
@@ -112,6 +138,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: NeoBrutalist.card(
+                  context: context,
                   borderRadius: 20,
                   borderWidth: 1.5,
                   shadowOffset: const Offset(0, 3.5),
@@ -122,22 +149,24 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Daily tasks overview',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F3F5),
+                            color: isDark
+                                ? const Color(0xFF222632)
+                                : const Color(0xFFF1F3F5),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
@@ -145,9 +174,16 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary,
                                 ),
                               ),
-                              Icon(Icons.arrow_drop_down, size: 16),
+                              Icon(Icons.arrow_drop_down,
+                                  size: 16,
+                                  color: isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary),
                             ],
                           ),
                         ),
@@ -165,7 +201,9 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                             drawVerticalLine: false,
                             horizontalInterval: 2,
                             getDrawingHorizontalLine: (val) => FlLine(
-                              color: const Color(0xFFF0F2F5),
+                              color: isDark
+                                  ? const Color(0xFF262B36)
+                                  : const Color(0xFFF0F2F5),
                               strokeWidth: 1,
                             ),
                           ),
@@ -177,9 +215,11 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                 interval: 2,
                                 getTitlesWidget: (val, meta) => Text(
                                   '${val.toInt()}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.textMuted,
+                                    color: isDark
+                                        ? const Color(0xFF6E7482)
+                                        : AppColors.textMuted,
                                   ),
                                 ),
                               ),
@@ -201,10 +241,12 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                   if (idx >= 0 && idx < days.length) {
                                     return Text(
                                       days[idx],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
+                                        color: isDark
+                                            ? const Color(0xFFA0A7B5)
+                                            : AppColors.textSecondary,
                                       ),
                                     );
                                   }
@@ -267,11 +309,13 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _buildLegendPill(
+                          context: context,
                           color: AppColors.statusInProcess,
                           label: 'In Process',
                         ),
                         const SizedBox(width: 16),
                         _buildLegendPill(
+                          context: context,
                           color: AppColors.statusCompleted,
                           label: 'Completed',
                         ),
@@ -287,6 +331,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: NeoBrutalist.card(
+                  context: context,
                   borderRadius: 20,
                   borderWidth: 1.5,
                   shadowOffset: const Offset(0, 3.5),
@@ -297,7 +342,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -305,15 +350,19 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Avg project daily',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.textMuted,
+                                color: isDark
+                                    ? const Color(0xFF6E7482)
+                                    : AppColors.textMuted,
                               ),
                             ),
                           ],
@@ -322,10 +371,12 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F3F5),
+                            color: isDark
+                                ? const Color(0xFF222632)
+                                : const Color(0xFFF1F3F5),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
@@ -333,9 +384,16 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary,
                                 ),
                               ),
-                              Icon(Icons.arrow_drop_down, size: 16),
+                              Icon(Icons.arrow_drop_down,
+                                  size: 16,
+                                  color: isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary),
                             ],
                           ),
                         ),
@@ -359,9 +417,11 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                 interval: 2,
                                 getTitlesWidget: (val, meta) => Text(
                                   '${val.toInt()}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.textMuted,
+                                    color: isDark
+                                        ? const Color(0xFF6E7482)
+                                        : AppColors.textMuted,
                                   ),
                                 ),
                               ),
@@ -383,10 +443,12 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                                   if (idx >= 0 && idx < days.length) {
                                     return Text(
                                       days[idx],
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
+                                        color: isDark
+                                            ? const Color(0xFFA0A7B5)
+                                            : AppColors.textSecondary,
                                       ),
                                     );
                                   }
@@ -404,7 +466,9 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                             drawVerticalLine: false,
                             horizontalInterval: 2,
                             getDrawingHorizontalLine: (val) => FlLine(
-                              color: const Color(0xFFF0F2F5),
+                              color: isDark
+                                  ? const Color(0xFF262B36)
+                                  : const Color(0xFFF0F2F5),
                               strokeWidth: 1,
                             ),
                           ),
@@ -508,7 +572,13 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
     );
   }
 
-  Widget _buildLegendPill({required Color color, required String label}) {
+  Widget _buildLegendPill({
+    required BuildContext context,
+    required Color color,
+    required String label,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -523,10 +593,10 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: isDark ? Colors.white : AppColors.textPrimary,
           ),
         ),
       ],

@@ -61,6 +61,28 @@ class AppColors {
   static const Color lightTextMuted = Color(0xFF9EA3AE);
   static const Color secondary = Color(0xFF42BAAE);
 
+  // Dynamic Theme Helpers
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color dynamicBg(BuildContext context) =>
+      isDark(context) ? const Color(0xFF0E1015) : bg;
+
+  static Color dynamicCard(BuildContext context) =>
+      isDark(context) ? const Color(0xFF191C24) : Colors.white;
+
+  static Color dynamicSurface(BuildContext context) =>
+      isDark(context) ? const Color(0xFF222632) : const Color(0xFFF1F3F6);
+
+  static Color dynamicBorder(BuildContext context) =>
+      isDark(context) ? const Color(0xFF2E3342) : borderBlack;
+
+  static Color dynamicText(BuildContext context) =>
+      isDark(context) ? darkTextPrimary : textPrimary;
+
+  static Color dynamicSubtext(BuildContext context) =>
+      isDark(context) ? darkTextSecondary : textSecondary;
+
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFFFA6551), Color(0xFFFF8B7A)],
     begin: Alignment.topLeft,

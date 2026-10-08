@@ -18,6 +18,7 @@ class CircularTaskProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final percentage = (progress.clamp(0.0, 1.0) * 100).round();
 
     return SizedBox(
@@ -31,7 +32,9 @@ class CircularTaskProgress extends StatelessWidget {
             painter: _CircularProgressPainter(
               progress: progress.clamp(0.0, 1.0),
               progressColor: progressColor,
-              backgroundColor: const Color(0xFFEAECEF),
+              backgroundColor: isDark
+                  ? const Color(0xFF2B303C)
+                  : const Color(0xFFEAECEF),
               strokeWidth: strokeWidth,
             ),
           ),
@@ -40,7 +43,7 @@ class CircularTaskProgress extends StatelessWidget {
             style: TextStyle(
               fontSize: size * 0.24,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: isDark ? Colors.white : AppColors.textPrimary,
               letterSpacing: -0.2,
             ),
           ),

@@ -107,6 +107,9 @@ class TaskRepositoryImpl implements TaskRepository {
       final updated = task.copyWith(
         isCompleted: newStatus,
         completedAt: newStatus ? DateTime.now() : null,
+        status: newStatus
+            ? 'Completed'
+            : (task.status == 'Completed' ? 'In Process' : task.status),
       );
       await updateTask(updated, userId: userId);
     }
@@ -134,8 +137,11 @@ class TaskRepositoryImpl implements TaskRepository {
 
       final updatedTask = task.copyWith(
         subtasks: updatedSubtasks,
-        isCompleted: allCompleted ? true : task.isCompleted,
-        completedAt: allCompleted ? DateTime.now() : task.completedAt,
+        isCompleted: allCompleted,
+        completedAt: allCompleted ? DateTime.now() : null,
+        status: allCompleted
+            ? 'Completed'
+            : (task.status == 'Completed' ? 'In Process' : task.status),
       );
       await updateTask(updatedTask, userId: userId);
     }
