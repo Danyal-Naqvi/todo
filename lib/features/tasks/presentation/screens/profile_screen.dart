@@ -5,7 +5,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/neo_brutalist_decorations.dart';
 import '../../../profile/domain/entities/user_profile.dart';
 import '../../../profile/presentation/bloc/profile_cubit.dart';
-import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
 import '../bloc/task_state.dart';

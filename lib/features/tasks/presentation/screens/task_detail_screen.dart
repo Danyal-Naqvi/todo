@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/task_alarm_service.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/entities/subtask.dart';
 import '../../domain/entities/task.dart';
@@ -34,6 +35,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late DateTime? _dueDate;
   late bool _isCompleted;
   late bool _isPinned;
+  late bool _isAlarmEnabled;
+  late int _alarmOffsetMinutes;
   late List<SubTask> _subtasks;
   bool _hasChanges = false;
 
@@ -47,6 +50,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _dueDate = widget.task.dueDate;
     _isCompleted = widget.task.isCompleted;
     _isPinned = widget.task.isPinned;
+    _isAlarmEnabled = widget.task.isAlarmEnabled;
+    _alarmOffsetMinutes = widget.task.alarmOffsetMinutes;
     _subtasks = List.from(widget.task.subtasks);
 
     _titleController.addListener(_markChanged);
@@ -79,6 +84,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       dueDate: _dueDate,
       isCompleted: _isCompleted,
       isPinned: _isPinned,
+      isAlarmEnabled: _isAlarmEnabled,
+      hasReminder: _isAlarmEnabled,
+      alarmOffsetMinutes: _alarmOffsetMinutes,
       subtasks: _subtasks,
       status: _isCompleted
           ? 'Completed'
@@ -536,6 +544,140 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           ),
                       ],
                     ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // In-App Start Alarm
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'TASK START ALARM',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: AppColors.darkTextMuted,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _isAlarmEnabled
+                          ? AppColors.primary.withValues(alpha: 0.5)
+                          : (isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder),
+                      width: _isAlarmEnabled ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isAlarmEnabled
+                            ? Icons.alarm_on_rounded
+                            : Icons.alarm_off_rounded,
+                        color: _isAlarmEnabled
+                            ? AppColors.primary
+                            : AppColors.darkTextMuted,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isAlarmEnabled ? 'Alarm Active 🔔' : 'Alarm Disabled',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            Text(
+                              _isAlarmEnabled
+                                  ? 'Will ring when scheduled start time arrives'
+                                  : 'Turn on to receive start alert',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isAlarmEnabled) ...[
+                        GestureDetector(
+                          onTap: () {
+                            TaskAlarmService.instance
+                                .triggerTestAlarm(widget.task);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Test',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isAlarmEnabled = !_isAlarmEnabled;
+                            _hasChanges = true;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _isAlarmEnabled
+                                ? AppColors.primary
+                                : (isDark
+                                    ? const Color(0xFF2B303E)
+                                    : const Color(0xFFE8ECEF)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _isAlarmEnabled ? 'ON' : 'OFF',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: _isAlarmEnabled
+                                  ? Colors.white
+                                  : (isDark
+                                      ? const Color(0xFFA0A7B5)
+                                      : AppColors.textSecondary),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

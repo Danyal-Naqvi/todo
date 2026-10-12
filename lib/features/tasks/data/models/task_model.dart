@@ -21,6 +21,8 @@ class TaskModel extends Task {
     super.tags,
     super.isPinned,
     super.hasReminder,
+    super.isAlarmEnabled,
+    super.alarmOffsetMinutes,
     super.status,
     super.customProgress,
     super.assigneeName,
@@ -46,6 +48,8 @@ class TaskModel extends Task {
       tags: task.tags,
       isPinned: task.isPinned,
       hasReminder: task.hasReminder,
+      isAlarmEnabled: task.isAlarmEnabled,
+      alarmOffsetMinutes: task.alarmOffsetMinutes,
       status: task.status,
       customProgress: task.customProgress,
       assigneeName: task.assigneeName,
@@ -87,6 +91,10 @@ class TaskModel extends Task {
       tagList = rawTags.map((t) => t.toString()).toList();
     }
 
+    final hasReminderVal = map['hasReminder'] as bool? ?? false;
+    final isAlarmVal = map['isAlarmEnabled'] as bool? ?? hasReminderVal;
+    final offsetVal = (map['alarmOffsetMinutes'] as num?)?.toInt() ?? 0;
+
     return TaskModel(
       id: docId ?? (map['id'] as String? ?? ''),
       title: map['title'] as String? ?? '',
@@ -103,7 +111,9 @@ class TaskModel extends Task {
       subtasks: subtaskList,
       tags: tagList,
       isPinned: map['isPinned'] as bool? ?? false,
-      hasReminder: map['hasReminder'] as bool? ?? false,
+      hasReminder: hasReminderVal,
+      isAlarmEnabled: isAlarmVal,
+      alarmOffsetMinutes: offsetVal,
       status: map['status'] as String? ?? 'In Process',
       customProgress: (map['customProgress'] as num?)?.toDouble(),
       assigneeName: map['assigneeName'] as String?,
@@ -130,6 +140,8 @@ class TaskModel extends Task {
       'tags': tags,
       'isPinned': isPinned,
       'hasReminder': hasReminder,
+      'isAlarmEnabled': isAlarmEnabled,
+      'alarmOffsetMinutes': alarmOffsetMinutes,
       'status': status,
       'customProgress': customProgress,
       'assigneeName': assigneeName,
@@ -157,6 +169,8 @@ class TaskModel extends Task {
       'tags': tags,
       'isPinned': isPinned,
       'hasReminder': hasReminder,
+      'isAlarmEnabled': isAlarmEnabled,
+      'alarmOffsetMinutes': alarmOffsetMinutes,
       'status': status,
       'customProgress': customProgress,
       'assigneeName': assigneeName,

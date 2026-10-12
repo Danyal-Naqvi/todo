@@ -29,6 +29,7 @@ class _QuickAddTaskSheetState extends State<QuickAddTaskSheet> {
   DateTime? _selectedDueDate = DateTime.now();
   final List<SubTask> _subtasks = [];
   bool _showDetails = false;
+  bool _isAlarmEnabled = true;
 
   @override
   void dispose() {
@@ -65,6 +66,8 @@ class _QuickAddTaskSheetState extends State<QuickAddTaskSheet> {
       dueDate: _selectedDueDate,
       createdAt: DateTime.now(),
       subtasks: List.from(_subtasks),
+      isAlarmEnabled: _isAlarmEnabled,
+      hasReminder: _isAlarmEnabled,
     );
 
     widget.onTaskCreated(newTask);
@@ -380,6 +383,80 @@ class _QuickAddTaskSheetState extends State<QuickAddTaskSheet> {
                       DateTime.now().add(const Duration(days: 1))),
                   child:
                       const Text('Tomorrow', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // Start Alarm Toggle
+            Row(
+              children: [
+                Icon(
+                  _isAlarmEnabled
+                      ? Icons.alarm_on_rounded
+                      : Icons.alarm_off_rounded,
+                  size: 16,
+                  color: _isAlarmEnabled
+                      ? AppColors.primary
+                      : AppColors.darkTextMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Start Alarm:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _isAlarmEnabled = !_isAlarmEnabled),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _isAlarmEnabled
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : Colors.grey.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _isAlarmEnabled
+                            ? AppColors.primary
+                            : Colors.grey.shade400,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isAlarmEnabled
+                              ? Icons.notifications_active_rounded
+                              : Icons.notifications_off_outlined,
+                          size: 12,
+                          color: _isAlarmEnabled
+                              ? AppColors.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _isAlarmEnabled ? 'ON' : 'OFF',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: _isAlarmEnabled
+                                ? AppColors.primary
+                                : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

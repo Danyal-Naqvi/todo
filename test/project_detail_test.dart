@@ -100,7 +100,6 @@ void main() {
   testWidgets(
       'ProjectDetailScreen 3-dots popup menu cancels task and migrates status',
       (WidgetTester tester) async {
-    Task? updatedTask;
     final repo = _FakeTaskRepo();
 
     final testTask = Task(

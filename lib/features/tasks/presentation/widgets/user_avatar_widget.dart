@@ -72,7 +72,8 @@ class UserAvatarWidget extends StatelessWidget {
           return Image.file(
             file,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+            errorBuilder: (context, error, stackTrace) =>
+                _buildFallbackAvatar(),
           );
         }
       } catch (_) {}
@@ -82,7 +83,8 @@ class UserAvatarWidget extends StatelessWidget {
       return Image.asset(
         assetPath!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildFallbackAvatar(),
       );
     }
 
@@ -90,7 +92,8 @@ class UserAvatarWidget extends StatelessWidget {
       return Image.network(
         imageUrl!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildFallbackAvatar(),
       );
     }
 

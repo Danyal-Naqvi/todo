@@ -97,20 +97,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Color _statusColor(String status) {
-    final lower = status.trim().toLowerCase();
-    if (lower == 'on going' || lower == 'ongoing') {
-      return AppColors.statusOnGoing;
-    }
-    if (lower == 'completed') {
-      return AppColors.statusCompleted;
-    }
-    if (lower == 'canceled' || lower == 'cancelled') {
-      return AppColors.statusCanceled;
-    }
-    return AppColors.statusInProcess;
-  }
-
   int? _parseHourString(String text) {
     final clean = text.toLowerCase().replaceAll('.', ':');
     final regex = RegExp(r'(\d{1,2})(?::\d{2})?\s*(am|pm)?');
@@ -970,17 +956,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
             const SizedBox(height: 6),
 
-            // Time range
-            Text(
-              task.timeRange ??
-                  (task.dueTime != null
-                      ? '${task.dueTime}'
-                      : 'Scheduled for today'),
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                color: isDark ? const Color(0xFF7E8696) : AppColors.textMuted,
-              ),
+            // Time range & Alarm indicator
+            Row(
+              children: [
+                Text(
+                  task.timeRange ??
+                      (task.dueTime != null
+                          ? '${task.dueTime}'
+                          : 'Scheduled for today'),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFF7E8696) : AppColors.textMuted,
+                  ),
+                ),
+                if (task.hasActiveAlarm) ...[
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.alarm_on_rounded,
+                    size: 13,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ],
             ),
 
             // Category or Subtitle Pill

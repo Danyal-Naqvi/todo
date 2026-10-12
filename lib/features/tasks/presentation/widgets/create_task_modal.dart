@@ -46,6 +46,8 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   String _selectedCategory = 'Design';
+  bool _isAlarmEnabled = true;
+  int _alarmOffsetMinutes = 0;
 
   @override
   void initState() {
@@ -226,7 +228,9 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
       customProgress: 0.0,
       subtasks: const [],
       assigneeName: 'Bruce Wayne',
-      hasReminder: false,
+      hasReminder: _isAlarmEnabled,
+      isAlarmEnabled: _isAlarmEnabled,
+      alarmOffsetMinutes: _alarmOffsetMinutes,
     );
 
     widget.onTaskCreated(task);
@@ -505,6 +509,142 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
                     }).toList(),
                   ),
 
+                  const SizedBox(height: 24),
+
+                  // Start Alarm Settings Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: NeoBrutalist.card(
+                      context: context,
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      shadowOffset: const Offset(0, 3),
+                      backgroundColor: isDark
+                          ? const Color(0xFF1E222D)
+                          : const Color(0xFFFFF9F8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _isAlarmEnabled
+                                    ? AppColors.primary
+                                    : (isDark
+                                        ? const Color(0xFF2E3342)
+                                        : const Color(0xFFE2E5E9)),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _isAlarmEnabled
+                                    ? Icons.alarm_on_rounded
+                                    : Icons.alarm_off_rounded,
+                                size: 18,
+                                color: _isAlarmEnabled
+                                    ? Colors.white
+                                    : (isDark
+                                        ? const Color(0xFFA0A7B5)
+                                        : AppColors.textSecondary),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'In-App Start Alarm',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _isAlarmEnabled
+                                        ? 'Rings when start time arrives 🔔'
+                                        : 'Alarm disabled for this task',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: isDark
+                                          ? const Color(0xFFA0A7B5)
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Custom NeoBrutalist Toggle Chip (avoiding Switch widget)
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isAlarmEnabled = !_isAlarmEnabled;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _isAlarmEnabled
+                                      ? AppColors.primary
+                                      : (isDark
+                                          ? const Color(0xFF2B303E)
+                                          : const Color(0xFFE8ECEF)),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _isAlarmEnabled
+                                        ? AppColors.borderBlack
+                                        : (isDark
+                                            ? const Color(0xFF3E4556)
+                                            : const Color(0xFFCCD1D9)),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  _isAlarmEnabled ? 'ON' : 'OFF',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                    color: _isAlarmEnabled
+                                        ? Colors.white
+                                        : (isDark
+                                            ? const Color(0xFFA0A7B5)
+                                            : AppColors.textSecondary),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_isAlarmEnabled) ...[
+                          const SizedBox(height: 14),
+                          Divider(
+                            height: 1,
+                            color: isDark
+                                ? const Color(0xFF2E3342)
+                                : const Color(0xFFE2E5E9),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _buildAlarmOffsetChip(0, 'At start time'),
+                              const SizedBox(width: 8),
+                              _buildAlarmOffsetChip(5, '5m before'),
+                              const SizedBox(width: 8),
+                              _buildAlarmOffsetChip(15, '15m before'),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 28),
 
                   // Create Task Button
@@ -641,6 +781,46 @@ class _CreateTaskModalState extends State<CreateTaskModal> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildAlarmOffsetChip(int offset, String label) {
+    final isSelected = _alarmOffsetMinutes == offset;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _alarmOffsetMinutes = offset),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF222632) : const Color(0xFFF1F3F5)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? (isDark ? Colors.white : AppColors.borderBlack)
+                  : (isDark
+                      ? const Color(0xFF2E3342)
+                      : const Color(0xFFE2E5E8)),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white : AppColors.textPrimary),
+            ),
+          ),
+        ),
       ),
     );
   }

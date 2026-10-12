@@ -19,6 +19,8 @@ class Task extends Equatable {
   final List<String> tags;
   final bool isPinned;
   final bool hasReminder;
+  final bool isAlarmEnabled;
+  final int alarmOffsetMinutes; // 0 = at start time, 5 = 5m before, etc.
   final String status; // 'On going', 'In Process', 'Completed', 'Canceled'
   final double? customProgress; // 0.0 to 1.0 (e.g. 0.4 for 40%)
   final String? assigneeName;
@@ -42,6 +44,8 @@ class Task extends Equatable {
     this.tags = const [],
     this.isPinned = false,
     this.hasReminder = false,
+    this.isAlarmEnabled = false,
+    this.alarmOffsetMinutes = 0,
     this.status = 'In Process',
     this.customProgress,
     this.assigneeName,
@@ -84,6 +88,71 @@ class Task extends Equatable {
         dueDate!.day == tomorrow.day;
   }
 
+  /// Parses hour and minute from strings like "10:45 am", "10.45 am", "14:00"
+  static (int, int)? parseTimeString(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final clean = raw.toLowerCase().replaceAll('.', ':');
+    final regex = RegExp(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?');
+    final match = regex.firstMatch(clean);
+    if (match != null) {
+      var hour = int.tryParse(match.group(1) ?? '');
+      final minute = int.tryParse(match.group(2) ?? '0') ?? 0;
+      final period = match.group(3);
+      if (hour != null) {
+        if (period == 'pm' && hour < 12) hour += 12;
+        if (period == 'am' && hour == 12) hour = 0;
+        return (hour, minute);
+      }
+    }
+    return null;
+  }
+
+  /// Combines [dueDate] with [dueTime] or [timeRange] to get the exact start DateTime
+  DateTime? get startDateTime {
+    final baseDate = dueDate ?? DateTime.now();
+    (int, int)? timeParsed;
+    if (dueTime != null && dueTime!.trim().isNotEmpty) {
+      timeParsed = parseTimeString(dueTime);
+    }
+    if (timeParsed == null && timeRange != null && timeRange!.trim().isNotEmpty) {
+      final startPart = timeRange!.split('-').first.trim();
+      timeParsed = parseTimeString(startPart);
+    }
+    if (timeParsed != null) {
+      return DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        timeParsed.$1,
+        timeParsed.$2,
+      );
+    }
+    if (dueDate != null && (dueDate!.hour != 0 || dueDate!.minute != 0)) {
+      return dueDate;
+    }
+    if (dueDate != null) {
+      return DateTime(baseDate.year, baseDate.month, baseDate.day, 9, 0);
+    }
+    return null;
+  }
+
+  /// Exact scheduled time for the alarm (accounting for alarmOffsetMinutes)
+  DateTime? get scheduledAlarmTime {
+    final start = startDateTime;
+    if (start == null) return null;
+    return start.subtract(Duration(minutes: alarmOffsetMinutes));
+  }
+
+  /// Whether this task has an active, actionable start alarm
+  bool get hasActiveAlarm {
+    final enabled = isAlarmEnabled || hasReminder;
+    if (!enabled) return false;
+    if (isCompleted) return false;
+    final s = status.trim().toLowerCase();
+    if (s == 'completed' || s == 'canceled' || s == 'cancelled') return false;
+    return true;
+  }
+
   Task copyWith({
     String? id,
     String? title,
@@ -101,6 +170,8 @@ class Task extends Equatable {
     List<String>? tags,
     bool? isPinned,
     bool? hasReminder,
+    bool? isAlarmEnabled,
+    int? alarmOffsetMinutes,
     String? status,
     double? customProgress,
     String? assigneeName,
@@ -124,6 +195,8 @@ class Task extends Equatable {
       tags: tags ?? this.tags,
       isPinned: isPinned ?? this.isPinned,
       hasReminder: hasReminder ?? this.hasReminder,
+      isAlarmEnabled: isAlarmEnabled ?? this.isAlarmEnabled,
+      alarmOffsetMinutes: alarmOffsetMinutes ?? this.alarmOffsetMinutes,
       status: status ?? this.status,
       customProgress: customProgress ?? this.customProgress,
       assigneeName: assigneeName ?? this.assigneeName,
@@ -150,6 +223,8 @@ class Task extends Equatable {
         tags,
         isPinned,
         hasReminder,
+        isAlarmEnabled,
+        alarmOffsetMinutes,
         status,
         customProgress,
         assigneeName,

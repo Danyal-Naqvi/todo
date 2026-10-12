@@ -12,6 +12,8 @@ import 'features/tasks/data/repositories/task_repository_impl.dart';
 import 'features/tasks/domain/repositories/task_repository.dart';
 import 'features/tasks/presentation/bloc/task_bloc.dart';
 import 'features/tasks/presentation/bloc/task_event.dart';
+import 'core/services/task_alarm_host.dart';
+import 'core/services/task_alarm_service.dart';
 import 'features/tasks/presentation/screens/home_screen.dart';
 
 void main() async {
@@ -28,6 +30,9 @@ void main() async {
 
   // Initialize Firebase (safely handles missing credentials with offline fallback)
   final isFirebaseReady = await FirebaseService.instance.initialize();
+
+  // Initialize In-App Alarm Manager
+  await TaskAlarmService.instance.initialize();
 
   // Setup datasources and repository
   final localDataSource = SharedPreferencesTaskLocalDataSource();
@@ -94,10 +99,13 @@ class TaskFlowApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
-            home: const HomeScreen(),
+            home: const TaskAlarmHost(
+              child: HomeScreen(),
+            ),
           );
         },
       ),
     );
   }
 }
+

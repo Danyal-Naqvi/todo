@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -466,7 +465,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
                               itemCount: _presetAvatars.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, index) =>
                                   const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 final item = _presetAvatars[index];
@@ -536,7 +535,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                       url!,
                                                       fit: BoxFit.cover,
                                                       errorBuilder:
-                                                          (_, __, ___) =>
+                                                          (context, error, stackTrace) =>
                                                               Container(
                                                         color: const Color(
                                                             0xFFE0E0E0),

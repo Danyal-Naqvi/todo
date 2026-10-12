@@ -103,6 +103,8 @@ class SharedPreferencesTaskLocalDataSource implements TaskLocalDataSource {
         customProgress: 0.75,
         createdAt: now.subtract(const Duration(days: 1)),
         isPinned: true,
+        hasReminder: true,
+        isAlarmEnabled: true,
         tags: const ['Development', 'Analytics', 'Dashboard'],
         assigneeName: 'Bruce Wayne',
         subtasks: const [

@@ -14,6 +14,8 @@ import '../widgets/status_summary_grid.dart';
 import '../widgets/user_avatar_widget.dart';
 import '../../../profile/domain/entities/user_profile.dart';
 import '../../../profile/presentation/bloc/profile_cubit.dart';
+import '../../../../core/services/task_alarm_service.dart';
+import 'active_alarms_screen.dart';
 import 'focus_timer_screen.dart';
 import 'project_detail_screen.dart';
 import 'profile_screen.dart';
@@ -230,6 +232,72 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ? const Color(0xFFFFB74D)
                                         : AppColors.textPrimary,
                                   ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        // In-App Alarm Button with active badge
+                        ValueListenableBuilder<List<Task>>(
+                          valueListenable:
+                              TaskAlarmService.instance.upcomingAlarmsNotifier,
+                          builder: (context, activeAlarms, _) {
+                            final hasAlarms = activeAlarms.isNotEmpty;
+                            final isDarkTheme =
+                                Theme.of(context).brightness == Brightness.dark;
+
+                            return GestureDetector(
+                              key: const ValueKey('home_alarm_btn'),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ActiveAlarmsScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                decoration: NeoBrutalist.iconButton(
+                                  context: context,
+                                  backgroundColor: hasAlarms
+                                      ? AppColors.primary
+                                      : null,
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Icon(
+                                      hasAlarms
+                                          ? Icons.alarm_on_rounded
+                                          : Icons.alarm_rounded,
+                                      size: 20,
+                                      color: hasAlarms
+                                          ? Colors.white
+                                          : (isDarkTheme
+                                              ? AppColors.darkTextPrimary
+                                              : AppColors.textPrimary),
+                                    ),
+                                    if (hasAlarms)
+                                      Positioned(
+                                        top: 5,
+                                        right: 5,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.statusInProcess,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.borderBlack,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             );

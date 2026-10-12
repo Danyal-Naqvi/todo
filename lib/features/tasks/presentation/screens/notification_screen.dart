@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/task_alarm_service.dart';
 import '../../../../core/theme/neo_brutalist_decorations.dart';
 import '../widgets/user_avatar_widget.dart';
+import 'active_alarms_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -113,15 +115,149 @@ class _NotificationScreenState extends State<NotificationScreen> {
               const SizedBox(height: 20),
 
               // Filter Chips
-              Row(
-                children: [
-                  _buildFilterChip('All'),
-                  const SizedBox(width: 10),
-                  _buildFilterChip('Unread'),
-                  const SizedBox(width: 10),
-                  _buildFilterChip('I was mentioned'),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [
+                    _buildFilterChip('All'),
+                    const SizedBox(width: 10),
+                    _buildFilterChip('Task Alarms ⏰'),
+                    const SizedBox(width: 10),
+                    _buildFilterChip('Unread'),
+                    const SizedBox(width: 10),
+                    _buildFilterChip('I was mentioned'),
+                  ],
+                ),
               ),
+
+              if (_activeFilter == 'Task Alarms ⏰') ...[
+                const SizedBox(height: 20),
+                ValueListenableBuilder<List<dynamic>>(
+                  valueListenable:
+                      TaskAlarmService.instance.upcomingAlarmsNotifier,
+                  builder: (context, alarms, _) {
+                    return Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: NeoBrutalist.card(
+                        context: context,
+                        borderRadius: 18,
+                        borderWidth: 1.5,
+                        shadowOffset: const Offset(0, 3.5),
+                        backgroundColor: const Color(0xFFFFF7F5),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.alarm_on_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Active Task Start Alarms',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${alarms.length} alarms scheduled to ring at start',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ActiveAlarmsScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    height: 40,
+                                    decoration: NeoBrutalist.button(
+                                      context: context,
+                                      backgroundColor: AppColors.primary,
+                                      borderRadius: 10,
+                                      borderWidth: 1.5,
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'View All Alarms',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    TaskAlarmService.instance.triggerTestAlarm();
+                                  },
+                                  child: Container(
+                                    height: 40,
+                                    decoration: NeoBrutalist.button(
+                                      context: context,
+                                      backgroundColor: AppColors.statusInProcess,
+                                      borderRadius: 10,
+                                      borderWidth: 1.5,
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Test Alarm 🔔',
+                                        style: TextStyle(
+                                          color: AppColors.borderBlack,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
 
               const SizedBox(height: 24),
 

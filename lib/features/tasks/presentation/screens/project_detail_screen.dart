@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/task_alarm_service.dart';
 import '../../../../core/theme/neo_brutalist_decorations.dart';
 import '../../domain/entities/subtask.dart';
 import '../../domain/entities/task.dart';
@@ -581,7 +582,165 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ],
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 18),
+
+              // In-App Start Alarm Card
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: NeoBrutalist.card(
+                  context: context,
+                  borderRadius: 18,
+                  borderWidth: 1.5,
+                  shadowOffset: const Offset(0, 3),
+                  backgroundColor: isDark
+                      ? const Color(0xFF1E222D)
+                      : (_currentTask.hasActiveAlarm
+                          ? const Color(0xFFFFF7F5)
+                          : const Color(0xFFF7F8FA)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _currentTask.hasActiveAlarm
+                            ? AppColors.primary
+                            : (isDark
+                                ? const Color(0xFF2E3342)
+                                : const Color(0xFFE2E5E9)),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _currentTask.hasActiveAlarm
+                            ? Icons.alarm_on_rounded
+                            : Icons.alarm_rounded,
+                        size: 20,
+                        color: _currentTask.hasActiveAlarm
+                            ? Colors.white
+                            : (isDark
+                                ? const Color(0xFFA0A7B5)
+                                : AppColors.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _currentTask.hasActiveAlarm
+                                ? 'Start Alarm Active 🔔'
+                                : 'Start Alarm Disabled',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _currentTask.hasActiveAlarm
+                                ? 'Rings at ${_currentTask.dueTime ?? 'scheduled time'}'
+                                : 'Tap to receive alert when starting',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: isDark
+                                  ? const Color(0xFFA0A7B5)
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_currentTask.hasActiveAlarm) ...[
+                      GestureDetector(
+                        onTap: () {
+                          TaskAlarmService.instance
+                              .triggerTestAlarm(_currentTask);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Test',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: () {
+                        final nextState = !_currentTask.hasActiveAlarm;
+                        TaskAlarmService.instance.toggleAlarm(
+                          task: _currentTask,
+                          enable: nextState,
+                          onUpdateTask: (updated) {
+                            setState(() {
+                              _currentTask = updated;
+                            });
+                            context.read<TaskBloc>().add(UpdateTask(updated));
+                          },
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              nextState
+                                  ? 'Alarm enabled for "${_currentTask.title}" ⏰'
+                                  : 'Alarm disabled for "${_currentTask.title}"',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _currentTask.hasActiveAlarm
+                              ? AppColors.primary
+                              : (isDark
+                                  ? const Color(0xFF2B303E)
+                                  : const Color(0xFFE8ECEF)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _currentTask.hasActiveAlarm
+                                ? AppColors.borderBlack
+                                : (isDark
+                                    ? const Color(0xFF3E4556)
+                                    : const Color(0xFFCCD1D9)),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          _currentTask.hasActiveAlarm ? 'ON' : 'Set Alarm',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: _currentTask.hasActiveAlarm
+                                ? Colors.white
+                                : (isDark
+                                    ? const Color(0xFFA0A7B5)
+                                    : AppColors.textSecondary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
 
               // Subtasks Section Header with Add button
               Row(
